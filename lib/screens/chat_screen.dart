@@ -54,6 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    //List<Text> msgWidget = [];
     return Scaffold(
       appBar: AppBar(
         leading: null,
@@ -81,6 +82,41 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('messages').snapshots(),
+              /*This is for getting the source of data. In our case it is Stream which is sent by
+                firebase through _firestore*/
+              builder: (context, asyncSnapshot) {
+                /*this asyncSnapshot is property of flutter through which is it connecting the
+                  firebase stream and the widget builder stream*/
+                if (asyncSnapshot.hasData) {
+                  //the connection of Flutter Stream and Firebase Stream and the data is hold in messages.
+                  final messages = asyncSnapshot.data.documents;
+                  //Because we want to show the messages as a column containing list of data.
+                  List<Text> msgWidget = [];
+                  //Looping through the objects we got from firebase.
+                  for (var messages in messages) {
+                    //In firrbase to access the msg we need to have collections -> snapshot -> Document -> data -> Property
+                    final msgText = messages.data["text"];
+                    final messageSender = messages.data["sender"];
+                    //Creating Single Text Widgets from each objects
+                    final singleMsgWidget =
+                        Text('$msgText from $messageSender');
+                    //Adding this singleMsgWidget to the list.
+                    msgWidget.add(singleMsgWidget);
+                  }
+                  return Column(
+                    children: msgWidget,
+                  );
+                } else {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      backgroundColor: Colors.lightBlueAccent,
+                    ),
+                  );
+                }
+              },
+            ),
             Container(
               decoration: kMessageContainerDecoration,
               child: Row(
