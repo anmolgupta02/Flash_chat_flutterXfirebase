@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() {
                         showSpinner = false;
                       });
-
+                      FocusManager.instance.primaryFocus.unfocus();
                       Fluttertoast.showToast(
                           msg: "Logged In Successfully with $email.",
                           gravity: ToastGravity.BOTTOM,
@@ -84,6 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.pushNamed(context, MyRoutes.chatRoute);
                     }
                   } catch (ERROR_USER_NOT_FOUND) {
+                    setState(() {
+                      showSpinner = false;
+                    });
                     Fluttertoast.showToast(
                         msg: "Email or password is wrong.",
                         gravity: ToastGravity.BOTTOM,
