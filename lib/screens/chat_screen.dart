@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 final _firestore = Firestore.instance;
+FirebaseUser loggedInUser;
 
 class ChatScreen extends StatefulWidget {
   @override
@@ -15,7 +16,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final messageTextEditingController = TextEditingController();
   final _auth = FirebaseAuth.instance;
-  FirebaseUser loggedInUser;
+
   String chat;
 
   @override
@@ -140,7 +141,10 @@ class MsgStream extends StatelessWidget {
       builder: (context, asyncSnapshot) {
         if (asyncSnapshot.hasData) {
           //the connection of Flutter Stream and Firebase Stream and the data is hold in messages.
-          final messages = asyncSnapshot.data.documents;
+          //adding .reversed because we added ListView property as True, which helped
+          //us in solving the issue of new message going out of view window
+          //But if we send message it was getting to the top. So we are revering the snapshot and then reversing the list altogether.
+          final messages = asyncSnapshot.data.documents.reversed;
           //Because we want to show the messages as a column containing list of data.
           List<MessageBubble> msgWidget = [];
           //Looping through the objects we got from firebase.
@@ -149,14 +153,21 @@ class MsgStream extends StatelessWidget {
             final msgText = messages.data["text"];
             final messageSender = messages.data["sender"];
             //Creating Single Text Widgets from each objects
-            final singleMsgWidget =
-                MessageBubble(sender: messageSender, text: msgText);
+            final currentUser = loggedInUser.email;
+            //To check if the current user is the sender of the message
+
+            final singleMsgWidget = MessageBubble(
+              sender: messageSender,
+              text: msgText,
+              isMe: currentUser == messageSender,
+            );
             //Adding this singleMsgWidget to the list.
             msgWidget.add(singleMsgWidget);
           }
           //Using listView becuase we want to use scrolling effect.
           return Expanded(
             child: ListView(
+              reverse: true,
               padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 20.0),
               //Finally showing List of Text widget to the Column.
               children: msgWidget,
@@ -176,30 +187,40 @@ class MsgStream extends StatelessWidget {
 
 //Designing the message body. To shape it like a bubble.
 class MessageBubble extends StatelessWidget {
-  MessageBubble({this.sender, this.text});
+  MessageBubble({this.sender, this.text, this.isMe});
 
   final String sender, text;
+  final bool isMe;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(10.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           Text(
             sender,
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
           Material(
-            borderRadius: BorderRadius.circular(30.0),
+            borderRadius: BorderRadius.only(
+                topLeft: isMe ? Radius.circular(30) : Radius.circular(0),
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+                topRight: isMe ? Radius.circular(0) : Radius.circular(30)),
             elevation: 5.0,
-            color: Colors.lightBlueAccent,
+            color: isMe ? Colors.lightBlueAccent : Colors.white,
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
               child: Text(
                 '$text',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0),
+                style: TextStyle(
+                  fontSize: 15.0,
+                  fontWeight: FontWeight.bold,
+                  color: isMe ? Colors.white : Colors.black54,
+                ),
               ),
             ),
           ),
